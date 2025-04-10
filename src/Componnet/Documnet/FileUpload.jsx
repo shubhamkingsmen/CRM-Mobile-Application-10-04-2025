@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, Button, TextInput, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Button,
+  TextInput,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import * as DocumentPicker from '@react-native-documents/picker';
+import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 
 const FileUpload = () => {
@@ -18,7 +28,11 @@ const FileUpload = () => {
       setFile(res[0]);
       setFilename(res[0].name);
     } catch (err) {
-      console.log('Error picking file:', err);
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled picker');
+      } else {
+        console.log('Error picking file:', err);
+      }
     }
   };
 
@@ -40,7 +54,6 @@ const FileUpload = () => {
 
     try {
       setLoading(true);
-      console.log(formData)
       const response = await axios.post('https://yourdomain.com/api/document/add', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -48,7 +61,6 @@ const FileUpload = () => {
         },
       });
 
-      console.log(response.data);
       Alert.alert('Success', response.data.message);
       setFile(null);
       setFilename('');
@@ -63,10 +75,14 @@ const FileUpload = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>File Upload</Text>
+      <Text style={styles.title}>Upload a File</Text>
 
-      <Button title="Choose File" onPress={pickFile} />
-      {file && <Text style={styles.fileInfo}>Selected: {file.name}</Text>}
+      <TouchableOpacity style={styles.uploadBox} onPress={pickFile}>
+        <Icon name="cloud-upload-outline" size={40} color="#aaa" />
+        <Text style={styles.uploadText}>
+          {file ? file.name : 'Tap to select a file'}
+        </Text>
+      </TouchableOpacity>
 
       <TextInput
         placeholder="Filename"
@@ -87,11 +103,20 @@ const FileUpload = () => {
         onChangeText={setCreateBy}
       />
 
-      <Button
-        title={loading ? 'Uploading...' : 'Upload File'}
+      <TouchableOpacity
+        style={styles.button}
         onPress={handleUpload}
         disabled={loading}
-      />
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <>
+            <Icon name="send" size={20} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.buttonText}>Upload File</Text>
+          </>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -102,23 +127,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#f0f4f8',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 24,
+    marginBottom: 24,
     textAlign: 'center',
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  uploadBox: {
+    borderWidth: 2,
+    borderColor: '#bbb',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    padding: 30,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginBottom: 20,
+  },
+  uploadText: {
+    marginTop: 10,
+    color: '#777',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
-    marginVertical: 8,
+    padding: 12,
     borderRadius: 8,
+    marginVertical: 8,
+    backgroundColor: '#fff',
   },
-  fileInfo: {
-    marginVertical: 10,
+  button: {
+    flexDirection: 'row',
+    backgroundColor: '#007bff',
+    padding: 14,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  buttonText: {
+    color: '#fff',
     fontSize: 16,
   },
 });
