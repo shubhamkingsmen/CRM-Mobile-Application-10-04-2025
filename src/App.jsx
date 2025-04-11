@@ -1,28 +1,46 @@
-import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
-import FileUpload from './Componnet/Documnet/FileUpload'; // adjust path if different
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  FlatList,
+  Dimensions,
+} from 'react-native';
+import FileUpload from './Componnet/Documnet/FileUpload';
+import FileExplorer from './Componnet/Documnet/FileExplorer';
+
+const { width } = Dimensions.get('window');
 
 const App = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>App</Text>
-      <FileUpload />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <FlatList
+        ListHeaderComponent={
+          <View style={styles.section}>
+            <FileUpload />
+            <FileExplorer />
+          </View>
+        }
+       
+        contentContainerStyle={styles.scrollContainer}
+      />
+    </SafeAreaView>
   );
 };
 
 export default App;
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: '#f2f5f9',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  scrollContainer: {
+    padding: width * 0.05,
+    paddingBottom: 40,
+  },
+  section: {
     marginBottom: 20,
-    textAlign: 'center',
   },
 });

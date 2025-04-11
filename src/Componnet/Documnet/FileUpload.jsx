@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Button,
+  Alert,
   TextInput,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
@@ -17,8 +16,10 @@ const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [filename, setFilename] = useState('');
   const [folderName, setFolderName] = useState('');
-  const [createBy, setCreateBy] = useState('65f18abc1234567890def456');
   const [loading, setLoading] = useState(false);
+
+  // Dummy createBy ID
+  const createBy = '660a50f124ce36a2608c5801';
 
   const pickFile = async () => {
     try {
@@ -37,8 +38,8 @@ const FileUpload = () => {
   };
 
   const handleUpload = async () => {
-    if (!file || !folderName || !createBy) {
-      Alert.alert('Missing fields', 'Please select file, folder name, and creator ID.');
+    if (!file || !folderName) {
+      Alert.alert('Missing fields', 'Please select file and folder name.');
       return;
     }
 
@@ -54,14 +55,13 @@ const FileUpload = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post('https://yourdomain.com/api/document/add', formData, {
+      const response = await axios.post('http://10.0.2.2:5001/api/document/add', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: 'Bearer YOUR_TOKEN_HERE',
         },
       });
 
-      Alert.alert('Success', response.data.message);
+      Alert.alert('Success', response.data.message || 'File uploaded successfully!');
       setFile(null);
       setFilename('');
       setFolderName('');
@@ -95,12 +95,6 @@ const FileUpload = () => {
         style={styles.input}
         value={folderName}
         onChangeText={setFolderName}
-      />
-      <TextInput
-        placeholder="Creator ID"
-        style={styles.input}
-        value={createBy}
-        onChangeText={setCreateBy}
       />
 
       <TouchableOpacity
