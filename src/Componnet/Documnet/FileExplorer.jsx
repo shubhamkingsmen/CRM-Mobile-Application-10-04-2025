@@ -9,8 +9,11 @@ import {
   Linking,
   Alert,
   Modal,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import RNFetchBlob from 'rn-fetch-blob';
 
 const FileExplorer = () => {
   const [data, setData] = useState([]);
@@ -19,14 +22,40 @@ const FileExplorer = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
+    requestStoragePermission();
     fetchData();
   }, []);
+
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission',
+            message: 'This app needs access to your storage to download files.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('Storage permission granted');
+        } else {
+          console.log('Storage permission denied');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
 
   const fetchData = async () => {
     try {
       const res = await fetch('http://10.0.2.2:5001/api/document');
       const json = await res.json();
       setData(json);
+      console.log(json);
     } catch (error) {
       console.error('Error fetching file data:', error);
       Alert.alert('Error', 'Failed to load files.');
@@ -44,28 +73,141 @@ const FileExplorer = () => {
   };
 
   const openFile = async (url) => {
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Unsupported', 'Cannot open this file type.');
+    const ext = url.split('.').pop();
+    if (ext === 'pdf') {
+      // Open in PDF viewer (or use a library for PDF files)
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Unsupported', 'Cannot open this file type.');
+        }
+      } catch (err) {
+        console.error('Error opening file:', err);
+        Alert.alert('Error', 'Something went wrong while opening the file.');
       }
-    } catch (err) {
-      console.error('Error opening file:', err);
-      Alert.alert('Error', 'Something went wrong while opening the file.');
+    } else if (ext === 'jpg' || ext === 'png') {
+      // Open image in image viewer
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Unsupported', 'Cannot open this file type.');
+        }
+      } catch (err) {
+        console.error('Error opening file:', err);
+        Alert.alert('Error', 'Something went wrong while opening the file.');
+      }
+    } else {
+      // Fallback to default behavior
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Unsupported', 'Cannot open this file type.');
+        }
+      } catch (err) {
+        console.error('Error opening file:', err);
+        Alert.alert('Error', 'Something went wrong while opening the file.');
+      }
     }
   };
 
-  const downloadFile = (url) => {
-    Alert.alert('Download started', `URL: ${url}`);
-    // TODO: Use rn-fetch-blob or similar to actually download the file
+  const downloadFile = async (url) => {
+    console.log(url);
+    try {
+      const { config, fs } = RNFetchBlob;
+      const date = new Date();
+      const fileExt = url.split('.').pop(); // Get file extension
+      const fileName = `file_${Math.floor(date.getTime() + date.getSeconds() / 2)}.${fileExt}`;
+      
+      // Adjust URL for Android emulators
+      const adjustedUrl = Platform.OS === 'android' && url.includes('127.0.0.1')
+        ? url.replace('127.0.0.1', '10.0.2.2') // Android emulator uses 10.0.2.2 for localhost
+        : url;
+  
+      const pathToDir = fs.dirs.DownloadDir; // For Android; For iOS, use fs.dirs.DocumentDir
+  
+      const options = {
+        fileCache: true,
+        addAndroidDownloads: {
+          useDownloadManager: true,
+          notification: true,
+          path: `${pathToDir}/${fileName}`,
+          description: 'Downloading file...',
+        },
+      };
+  
+      config(options)
+        .fetch('GET', adjustedUrl)
+        .then((res) => {
+          console.log('File saved to:', res.path());
+          Alert.alert('Download Complete', `File saved to:\n${res.path()}`);
+        })
+        .catch((err) => {
+          console.error('Download error:', err);
+          Alert.alert('Error', 'Failed to download file.');
+        });
+    } catch (err) {
+      console.error('Download exception:', err);
+      Alert.alert('Error', 'Something went wrong.');
+    }
   };
+  
+  
 
-  const deleteFile = (fileId) => {
-    Alert.alert('Delete file', `Would delete file with ID: ${fileId}`);
-    // TODO: Implement delete API call
+  const deleteFile = async (fileId) => {
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this file?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`http://10.0.2.2:5001/api/document/delete/${fileId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Accept': 'application/json',
+                },
+              });
+  
+              const contentType = response.headers.get('content-type');
+              const rawText = await response.text();
+              console.log('Status:', response.status);
+              console.log('Content-Type:', contentType);
+              console.log('Raw Response:', rawText);
+  
+              if (contentType && contentType.includes('application/json')) {
+                const data = JSON.parse(rawText);
+  
+                if (response.ok) {
+                  Alert.alert('Success', data.message || 'File deleted successfully.');
+                  fetchData(); // Refresh list
+                } else {
+                  Alert.alert('Error', data.message || 'Failed to delete file.');
+                }
+              } else {
+                Alert.alert('Error', 'Server returned unexpected content. Check backend.');
+              }
+  
+            } catch (err) {
+              console.error('Delete error:', err);
+              Alert.alert('Error', 'Something went wrong while deleting the file.');
+            }
+          },
+        },
+      ]
+    );
   };
+  
+  
+  
 
   const renderFile = (file) => (
     <View key={file._id} style={styles.fileItem}>

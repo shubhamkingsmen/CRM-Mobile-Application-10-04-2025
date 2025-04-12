@@ -1,6 +1,10 @@
 package com.crm
 
 import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -11,6 +15,8 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import android.content.Context
+
 
 class MainApplication : Application(), ReactApplication {
 
@@ -41,4 +47,13 @@ class MainApplication : Application(), ReactApplication {
       load()
     }
   }
+
+ override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter): Intent? {
+    return if (Build.VERSION.SDK_INT >= 34 && applicationInfo.targetSdkVersion >= 34) {
+        super.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+    } else {
+        super.registerReceiver(receiver, filter)
+    }
+}
+
 }

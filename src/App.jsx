@@ -10,6 +10,7 @@ import {
 import FileUpload from './Componnet/Documnet/FileUpload';
 import FileExplorer from './Componnet/Documnet/FileExplorer';
 
+
 const { width } = Dimensions.get('window');
 
 const App = () => {
@@ -20,6 +21,7 @@ const App = () => {
           <View style={styles.section}>
             <FileUpload />
             <FileExplorer />
+          
           </View>
         }
        
