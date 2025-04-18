@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import FileUpload from './Componnet/Documnet/FileUpload';
 import FileExplorer from './Componnet/Documnet/FileExplorer';
+import LinkContactLeads from './Componnet/Documnet/LinkModel';
 
 
 const { width } = Dimensions.get('window');
@@ -21,7 +22,7 @@ const App = () => {
           <View style={styles.section}>
             <FileUpload />
             <FileExplorer />
-          
+            <LinkContactLeads/>
           </View>
         }
        
